@@ -29,6 +29,10 @@ public class Snake {
         this.heading = heading;
     }
     
+    public Point getHeading() {
+        return heading;
+    }
+
     public void move() {
         addHeadingPoint();
         if (hasEaten) {
