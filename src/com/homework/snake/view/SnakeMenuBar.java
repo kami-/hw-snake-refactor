@@ -8,45 +8,81 @@ import javax.swing.JMenuItem;
 
 public class SnakeMenuBar extends JMenuBar {
 
-    public SnakeMenuBar(ActionListener[] gameListeners, ActionListener[] settingsListeners, ActionListener[] helpListeners) {
+    private JMenuItem newGame;
+    private JMenuItem showTopList;
+    private JMenuItem exitGame;
+    private JMenuItem setHardMode;
+    private JMenuItem setNormalMode;
+    private JMenuItem setEasyMode;
+    private JMenuItem showControls;
+    private JMenuItem showCredits;
+
+    public SnakeMenuBar() {
         super();
-        initGameMenu(gameListeners);
-        initSettingsMenu(settingsListeners);
-        initHelpMenu(helpListeners);
+        initGameMenu();
+        initSettingsMenu();
+        initHelpMenu();
     }
 
-    private void initGameMenu(ActionListener[] gameListeners) {
-        String[] titles = {"Új Játék (F2)", "Toplista", "Kilépés (ALT+F4)"};
-        JMenu menu = new JMenu("Játék");
-        addMenu(menu, titles, gameListeners);
+    private void initGameMenu() {
+        JMenu menu = new JMenu("JÃ¡tÃ©k");
+        newGame = createMenuItem(menu, "Ãšj JÃ¡tÃ©k (F2)");
+        showTopList = createMenuItem(menu, "Toplista");
+        exitGame = createMenuItem(menu, "KilÃ©pÃ©s (ALT+F4)");
+        this.add(menu);
     }
 
-    private void initSettingsMenu(ActionListener[] settingsListeners) {
-        String[] titles = {"Nehéz", "Normál", "Könnyû"};
-        JMenu menu = new JMenu("Beállítások");
-        addMenu(menu, titles, settingsListeners);
+    private void initSettingsMenu() {
+        JMenu menu = new JMenu("BeÃ¡llÃ­tÃ¡sok");
+        setHardMode = createMenuItem(menu, "NehÃ©z");
+        setNormalMode = createMenuItem(menu, "NormÃ¡l");
+        setEasyMode = createMenuItem(menu, "KÃ¶nnyÅ±");
+        this.add(menu);
     }
 
-    private void initHelpMenu(ActionListener[] helpListeners) {
-        String[] titles = {"Irányítás", "Készítõ"};
-        JMenu menu = new JMenu("Segítség");
-        addMenu(menu, titles, helpListeners);
+    private void initHelpMenu() {
+        JMenu menu = new JMenu("SegÃ­tsÃ©g");
+        showControls = createMenuItem(menu, "ItÃ¡nyÃ­tÃ¡s");
+        showCredits = createMenuItem(menu, "KÃ©szÃ­tÅ‘");
+        this.add(menu);
     }
 
-    private void addMenu(JMenu menu, String[] titles, ActionListener[] listeners) {
-        for (int i = 0; i < listeners.length; i++) {
-            createMenuItem(menu, titles[i], listeners[i]);
-            if (i < listeners.length) {
-                menu.addSeparator();
-            }
-        }
-        add(menu);
-    }
-
-    private void createMenuItem(JMenu menu, String title, ActionListener listener) {
+    private JMenuItem createMenuItem(JMenu menu, String title) {
         JMenuItem menuItem = new JMenuItem(title);
-        menuItem.addActionListener(listener);
         menu.add(menuItem);
+        return menuItem;
+    }
+
+    public void addListenerToNewGame(ActionListener listener) {
+        newGame.addActionListener(listener);
+    }
+
+    public void addListenerToShowTopList(ActionListener listener) {
+        showTopList.addActionListener(listener);
+    }
+
+    public void addListenerToExitGame(ActionListener listener) {
+        exitGame.addActionListener(listener);
+    }
+
+    public void addListenerToSetHardMode(ActionListener listener) {
+        setHardMode.addActionListener(listener);
+    }
+
+    public void addListenerToSetNormalMode(ActionListener listener) {
+        setNormalMode.addActionListener(listener);
+    }
+
+    public void addListenerToSetEasyMode(ActionListener listener) {
+        setEasyMode.addActionListener(listener);
+    }
+
+    public void addListenerToShowControls(ActionListener listener) {
+        showControls.addActionListener(listener);
+    }
+
+    public void addListenerToShowCredits(ActionListener listener) {
+        showCredits.addActionListener(listener);
     }
 }
 

@@ -51,15 +51,14 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
     private Snake snake;
     private Point foodPoint;
     private JButton foodButton;
+    private boolean canChangeDirection;
 
     private static final long serialVersionUID = 1L;
-    int WIDTH = 506, HEIGHT = 380, egyseg = 10;
-    int palyasz = 50 * egyseg, palyam = 30 * egyseg;
-    int sebesseg, pontok, hossz, xvalt, yvalt;
-    boolean fut, mehetbalra, mehetjobbra, mehetfel, mehetle, evett, magabament, gameover;
-    int[] pozx = new int[125];
-    int[] pozy = new int[125];
-    Point[] p = new Point[125];
+    int WIDTH = 506, HEIGHT = 380;
+    int palyasz = 50 * BLOCK_SIZE, palyam = 30 * BLOCK_SIZE;
+    int sebesseg, pontok;
+    boolean fut, gameover;
+
     Random r = new Random();
 
     List<JButton> kocka = new ArrayList<>();
@@ -83,20 +82,9 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
     * megnyitása
     */
     public void init() {
-        pozx[0] = 24 * egyseg;
-        pozy[0] = 14 * egyseg;
         sebesseg = 70;
         pontok = 0;
-        hossz = 3;
-        xvalt = +egyseg;
-        yvalt = 0;
         fut = false;
-        magabament = false;
-        mehetbalra = false;
-        mehetjobbra = true;
-        mehetfel = true;
-        mehetle = true;
-        evett = true;
         gameover = false;
         addFood();
         //fajlmegnyitas();
@@ -146,13 +134,13 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
 
         // Keret megrajzolása és hozzáadása a pályához
         keret[0] = new JPanel();
-        keret[0].setBounds(0, 0, palyasz, egyseg);
+        keret[0].setBounds(0, 0, palyasz, BLOCK_SIZE);
         keret[1] = new JPanel();
-        keret[1].setBounds(0, 0, egyseg, palyam);
+        keret[1].setBounds(0, 0, BLOCK_SIZE, palyam);
         keret[2] = new JPanel();
-        keret[2].setBounds(0, palyam - egyseg, palyasz, egyseg);
+        keret[2].setBounds(0, palyam - BLOCK_SIZE, palyasz, BLOCK_SIZE);
         keret[3] = new JPanel();
-        keret[3].setBounds(palyasz - egyseg, 0, egyseg, palyam);
+        keret[3].setBounds(palyasz - BLOCK_SIZE, 0, BLOCK_SIZE, palyam);
         jatekter.add(keret[0]);
         jatekter.add(keret[1]);
         jatekter.add(keret[2]);
@@ -290,28 +278,16 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
         // Az értékek kezdeti helyzetbe állítása
         init();
 
-        // A pálya lepucolása
-        jatekter.removeAll();
-        scrollpane.removeAll();
-
         // Ha az elõzõ játékban meghalt a kígyó, akkor a játék vége kijelzõ
         // törlése az ablakból
         if (gameover == true) {
             frame.remove(top);
         }
 
-        // A keret hozzáadása a pályához
-        jatekter.add(keret[0]);
-        jatekter.add(keret[1]);
-        jatekter.add(keret[2]);
-        jatekter.add(keret[3]);
-
-        // Az elsõ kígyó létrehozása, kirajzolása
         initSnake();
 
         // A pálya hozzáadása az ablakhoz, annak újrarajzolása és a pontszám
         // kiírása
-        frame.add(jatekter, BorderLayout.CENTER);
         frame.repaint();
         frame.setVisible(true);
         pontkiiras.setText("Pontszám: " + pontok);
@@ -539,6 +515,7 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
                 }
                 drawSnake();
             }
+            canChangeDirection = true;
         } catch (SnakeAteItselfException e) {
             endGame();
         }
@@ -572,33 +549,31 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
     */
     @Override
     public void keyPressed(KeyEvent e) {
-        if (mehetbalra && e.getKeyCode() == 37) {
-            setSnakeHeading(-1, 0);
-            mehetjobbra = false;
-            mehetfel = true;
-            mehetle = true;
-        }
-        if (mehetfel && e.getKeyCode() == 38) {
-            setSnakeHeading(0, -1);
-            mehetle = false;
-            mehetjobbra = true;
-            mehetbalra = true;
-        }
-        if (mehetjobbra && e.getKeyCode() == 39) {
-            setSnakeHeading(1, 0);
-            mehetbalra = false;
-            mehetfel = true;
-            mehetle = true;
-        }
-        if (mehetle && e.getKeyCode() == 40) {
-            setSnakeHeading(0, 1);
-            mehetfel = false;
-            mehetjobbra = true;
-            mehetbalra = true;
-        }
         if (e.getKeyCode() == 113) {
             reset();
+            return;
         }
+        if (canChangeDirection) {
+            int x = 0;
+            int y = 0;
+            if (e.getKeyCode() == 37) {
+                x = -1;
+            } else if (e.getKeyCode() == 38) {
+                y = -1;
+            } else if (e.getKeyCode() == 39) {
+                x = 1;
+            } else if (e.getKeyCode() == 40) {
+                y = 1;
+            }
+            if (!isOppositeHeading(x, y)) {
+                setSnakeHeading(x, y);
+            }
+            canChangeDirection = false;
+        }
+    }
+
+    private boolean isOppositeHeading(int x, int y) {
+        return snake.getHeading().x == -x && snake.getHeading().y == -y;
     }
 
     private void setSnakeHeading(int x, int y) {
@@ -606,11 +581,11 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
     }
 
     @Override
-    public void keyReleased(KeyEvent arg0) {
+    public void keyReleased(KeyEvent e) {
     }
 
     @Override
-    public void keyTyped(KeyEvent arg0) {
+    public void keyTyped(KeyEvent e) {
     }
 
     /*
