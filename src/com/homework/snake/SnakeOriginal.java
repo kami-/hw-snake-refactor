@@ -80,10 +80,6 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
         }
     }
 
-    /*
-    * Az értékek alaphelyzetbe állítása és a toplistát tartalmazó fájl
-    * megnyitása
-    */
     public void initGame() {
         sebesseg = 70;
         pontok = 0;
@@ -93,20 +89,11 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
         initSnake();
     }
 
-    /*
-    * A mozgatás elindításának függvénye.
-    */
     public void startGame() {
         fut = true;
         (new Thread(this)).start();
     }
 
-    /*
-    * A Snake() függvény. Ez a program lelke. Itt történik az ablak
-    * létrehozása, az ablak minden elemények hozzáadása, az értékek
-    * inicializálása, az elsõ snake létrehozása, valamint itt híodik meg a
-    * "mozgató" függvény is
-    */
     SnakeOriginal() {
         initWindow();
         initGame();
@@ -126,6 +113,8 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
         top = new JPanel();
         top.setBounds(0, 0, palyasz, palyam);
         top.setBackground(Color.LIGHT_GRAY);
+        top.setVisible(false);
+        mainWindow.add(top);
     }
 
     private void initMainWindow() {
@@ -146,10 +135,6 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
         mainWindow.add(gameBoard);
     }
 
-    /*
-    * Ez a menüt létrehozõ függvény. Létrehozza a menüket, hozzáadja a
-    * funkcióikat, és a képernyõre viszi azokat
-    */
     public void initMenuBar() {
         menuBar = new SnakeMenuBar();
         menuBar.addListenerToNewGame(new ActionListener() {
@@ -222,23 +207,21 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
     * mozgató függvény
     */
     void reset() {
+        clearFood();
+        clearSnakeComponent();
+        if (gameover == true) {
+            top.setVisible(false);
+        }
         // Az értékek kezdeti helyzetbe állítása
         initGame();
 
         // Ha az elõzõ játékban meghalt a kígyó, akkor a játék vége kijelzõ
         // törlése az ablakból
-        if (gameover == true) {
-            mainWindow.remove(top);
-        }
-
-        initSnake();
 
         // A pálya hozzáadása az ablakhoz, annak újrarajzolása és a pontszám
         // kiírása
-        mainWindow.repaint();
-        mainWindow.setVisible(true);
+        gameBoard.setVisible(true);
         scoreBarLabel.setText("Pontszám: " + pontok);
-
         // A mozgatás elindítása
         startGame();
     }
@@ -251,6 +234,17 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
         drawSnake();
     }
 
+    void clearSnakeComponent() {
+        for (JButton snakeButton : snakeComponent) {
+            snakeButton.setVisible(false);
+        }
+        snakeComponent.clear();
+    }
+
+    void clearFood() {
+        foodButton.setVisible(false);
+    }
+
     private void drawSnake() {
         List<Point> snakeParts = snake.getParts();
         extendKocka(snakeParts.size());
@@ -261,6 +255,7 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
 
     private void updateButton(JButton button, Point point, Color color) {
         button.setEnabled(false);
+        button.setVisible(true);
         button.setBounds(point.x * BLOCK_SIZE, point.y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
         button.setBackground(color);
     }
@@ -278,6 +273,7 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
             foodButton = new JButton();
             gameBoard.add(foodButton);
         }
+        foodButton.setVisible(true);
         foodPoint = new Point(r.nextInt(BOARD_WIDTH), r.nextInt(BOARD_HEIGHT));
         updateButton(foodButton, foodPoint, Color.BLACK);
     }
@@ -342,11 +338,10 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
     * képernyõt rajzol ki. A végén pedig szerializál.
     */
     void toplistabatesz() {
-        // A pálya törlése a képernyõrõl.
-        mainWindow.remove(gameBoard);
-
+        gameBoard.setVisible(false);
+        top.setVisible(true);
         // Ha az elért eredmény jobb az eddigi legkisebb eredménynél
-        if (pontok > lista.get(9).getpont()) {
+        if (pontok > lista.get(lista.size() - 1).getpont()) {
             // Egy ArrayList létrehozása, mely a megadott nevet tárolja
             final ArrayList<String> holder = new ArrayList<String>();
 
@@ -390,10 +385,9 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
 
             // A lista utolsó elemének kicserélése az új listaelemmel és a lista
             // sorbarendezése
-            Comp comp = new Comp();
-            lista.remove(9);
+            lista.remove(lista.size() - 1);
             lista.add(new Toplist(holder.remove(0), pontok));
-            Collections.sort(lista, comp);
+            Collections.sort(lista, new Comp());
 
             // A toplista frissítése, és kirajzolása az ablakra
             toplistafrissites();
