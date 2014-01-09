@@ -45,7 +45,7 @@ public class Snake {
     private void addHeadingPoint() {
         Point head = parts.peekFirst();
         Point newHead = new Point(head.x + heading.x, head.y + heading.y);
-        if (head.equals(newHead)) {
+        if (parts.contains(newHead)) {
             throw new SnakeAteItselfException();
         }
         parts.addFirst(new Point(head.x + heading.x, head.y + heading.y));
