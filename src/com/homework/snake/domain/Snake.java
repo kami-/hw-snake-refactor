@@ -51,7 +51,7 @@ public class Snake {
         parts.addFirst(new Point(head.x + heading.x, head.y + heading.y));
     }
     
-    public List<Point> getPositions() {
+    public List<Point> getParts() {
         return new ArrayList<>(parts);
     }
 }
