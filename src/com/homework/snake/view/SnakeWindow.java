@@ -15,6 +15,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
+import com.homework.snake.SnakeController;
 import com.homework.snake.SnakeGame;
 
 
@@ -26,6 +27,7 @@ public class SnakeWindow extends JFrame implements KeyListener {
     private static final int BLOCK_SIZE = 10;
 
     private SnakeGame game;
+    private SnakeController controller;
     private JFrame mainWindow;
     private JPanel gameBoard;
     private JPanel scoreBar;
@@ -88,26 +90,7 @@ public class SnakeWindow extends JFrame implements KeyListener {
         gameBoard.setBounds(BLOCK_SIZE, BLOCK_SIZE, game.getBoardWidth() * BLOCK_SIZE, game.getBoardHeight() * BLOCK_SIZE);
         gameBoard.setBackground(Color.LIGHT_GRAY);
         mainWindow.add(gameBoard);
-        //createGameBoardFrame();
     }
-
-    /*
-    private void createGameBoardFrame() {
-        int[][] frameSettings = {{0, 0, game.getBoardWidth() * BLOCK_SIZE + FRAME_SIZE * BLOCK_SIZE, BLOCK_SIZE}, {}, {}, {}};
-        for (int[] setting : frameSettings) {
-            JPanel panel = new JPanel();
-            panel.setBounds(setting[0], setting[1], setting[2], setting[3]);
-        }
-        keret[0] = new JPanel();
-        keret[0].setBounds(0, 0, palyasz, BLOCK_SIZE);
-        keret[1] = new JPanel();
-        keret[1].setBounds(0, 0, BLOCK_SIZE, palyam);
-        keret[2] = new JPanel();
-        keret[2].setBounds(0, palyam - BLOCK_SIZE, palyasz, BLOCK_SIZE);
-        keret[3] = new JPanel();
-        keret[3].setBounds(palyasz - BLOCK_SIZE, 0, BLOCK_SIZE, palyam);
-    }
-    */
 
     private void initScoreBar() {
         scoreBar = new JPanel();
