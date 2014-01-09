@@ -15,9 +15,14 @@ public class Snake {
 
     public Snake(int initLength, Point head, Point heading) {
         this.heading = heading;
-        for (int i = 0; i < initLength; i++) {
-            parts.add(new Point(head.x - heading.x, head.y - heading.y));
+        parts.add(head);
+        for (int i = 1; i < initLength; i++) {
+            parts.add(new Point(head.x - heading.x * i, head.y - heading.y * i));
         }
+    }
+
+    public Point getHead() {
+        return parts.peekFirst();
     }
 
     public void setHeading(Point heading) {
