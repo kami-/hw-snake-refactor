@@ -7,20 +7,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.Vector;
@@ -36,6 +23,7 @@ import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 
 import com.homework.snake.domain.Snake;
+import com.homework.snake.domain.TopListRepository;
 import com.homework.snake.exceptions.SnakeAteItselfException;
 import com.homework.snake.view.SnakeMenuBar;
 
@@ -43,11 +31,13 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
     /**
      * 
      */
+    private static final int BOARD_WIDTH = 48;
+    private static final int BOARD_HEIGHT = 28;
+
     private static final int SCOREBAR_HEIGHT = 30;
     private static final int WINDOW_WIDTH = 506;
     private static final int WINDOW_HEIGHT = 380;
-    private static final int BOARD_WIDTH = 48;
-    private static final int BOARD_HEIGHT = 28;
+
     private static final int BLOCK_SIZE = 10;
 
     private Snake snake;
@@ -57,48 +47,46 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
     private List<JButton> snakeComponent = new ArrayList<>();
     private SnakeMenuBar menuBar;
     private JPanel gameBoard;
+    private int score;
     
     private static final long serialVersionUID = 1L;
-    int palyasz = 50 * BLOCK_SIZE, palyam = 30 * BLOCK_SIZE;
-    int sebesseg, pontok;
-    boolean fut, gameover;
+    private int updateDelay;
+    private boolean isRunning;
+    private boolean isGameOver;
 
     Random r = new Random();
-
 
     private JFrame mainWindow;
     private JPanel scoreBar;
     private JLabel scoreBarLabel;
-    JPanel top;
+    private JPanel topList;
 
-    JScrollPane scrollpane;
+    private JScrollPane topListScrollPane;
 
-    ArrayList<Toplist> lista = new ArrayList<Toplist>();
-    {
-        for (int i = 0; i < 10; i++) {
-            lista.add(new Toplist("", 0));
-        }
+    private TopListRepository topListRepo;
+
+    SnakeOriginal() {
+        initWindow();
+        initGame();
+        topListRepo = new TopListRepository();
+        startGame();
+        (new Thread(this)).start();
     }
 
     public void initGame() {
-        sebesseg = 70;
-        pontok = 0;
-        fut = false;
-        gameover = false;
+        updateDelay = 70;
+        score = 0;
+        isRunning = false;
+        isGameOver = false;
         addFood();
         initSnake();
     }
 
     public void startGame() {
-        fut = true;
-        (new Thread(this)).start();
+        isRunning = true;
+
     }
 
-    SnakeOriginal() {
-        initWindow();
-        initGame();
-        startGame();
-    }
 
     private void initWindow() {
         mainWindow = new JFrame("Snake v0.8");
@@ -110,11 +98,11 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
     }
 
     private void initTopList() {
-        top = new JPanel();
-        top.setBounds(0, 0, palyasz, palyam);
-        top.setBackground(Color.LIGHT_GRAY);
-        top.setVisible(false);
-        mainWindow.add(top);
+        topList = new JPanel();
+        topList.setBounds(0, 0, (BOARD_WIDTH + 2) * BLOCK_SIZE, (BOARD_HEIGHT + 2) * BLOCK_SIZE);
+        topList.setBackground(Color.LIGHT_GRAY);
+        topList.setVisible(false);
+        mainWindow.add(topList);
     }
 
     private void initMainWindow() {
@@ -146,7 +134,7 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
         menuBar.addListenerToShowTopList(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                JOptionPane.showMessageDialog(gameBoard, scrollpane);
+                JOptionPane.showMessageDialog(gameBoard, topListScrollPane);
             }
         });
         menuBar.addListenerToExitGame(new ActionListener() {
@@ -158,19 +146,19 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
         menuBar.addListenerToSetHardMode(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                sebesseg = 50;
+                updateDelay = 50;
             }
         });
         menuBar.addListenerToSetNormalMode(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                sebesseg = 70;
+                updateDelay = 70;
             }
         });
         menuBar.addListenerToSetEasyMode(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                sebesseg = 90;
+                updateDelay = 90;
             }
         });
         menuBar.addListenerToShowCredits(new ActionListener() {
@@ -196,39 +184,23 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
         scoreBar.setBackground(Color.GRAY);
         scoreBarLabel = new JLabel();
         scoreBarLabel.setForeground(Color.BLACK);
+        scoreBarLabel.setText("Pontszám: " + score);
         scoreBar.add(scoreBarLabel);
         mainWindow.add(scoreBar);
     }
 
-    /*
-    * Az újraindító függvény. Ennek meghívásakor az érték újra alapállapotba
-    * kerülnek, ami eddig az ablakon volt az eltûnik, a mozgatás megáll, a
-    * keret, az elsõ snake és a pontszám újra kirajzoldik, és meghívódik a
-    * mozgató függvény
-    */
     void reset() {
         clearFood();
         clearSnakeComponent();
-        if (gameover == true) {
-            top.setVisible(false);
+        if (isGameOver == true) {
+            topList.setVisible(false);
         }
-        // Az értékek kezdeti helyzetbe állítása
         initGame();
-
-        // Ha az elõzõ játékban meghalt a kígyó, akkor a játék vége kijelzõ
-        // törlése az ablakból
-
-        // A pálya hozzáadása az ablakhoz, annak újrarajzolása és a pontszám
-        // kiírása
         gameBoard.setVisible(true);
-        scoreBarLabel.setText("Pontszám: " + pontok);
-        // A mozgatás elindítása
+        scoreBarLabel.setText("Pontszám: " + score);
         startGame();
     }
 
-    /*
-    * Az elsõ snake létrehozása és a pályára rajzolása.
-    */
     void initSnake() {
         snake = new Snake(3, new Point(24, 14), new Point(1, 0));
         drawSnake();
@@ -250,6 +222,7 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
         extendKocka(snakeParts.size());
         for (int i = 0; i < snakeParts.size(); i++) {
             updateButton(snakeComponent.get(i), snakeParts.get(i), Color.BLACK);
+            //System.out.println("size: " + snakeParts.size() + ", index: " + i);
         }
     }
 
@@ -278,171 +251,65 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
         updateButton(foodButton, foodPoint, Color.BLACK);
     }
 
-    /*
-    * A fájlmegnyitó függvény megnyitja a "toplist.ser" nevû fájlt, mely a
-    * toplista szereplõit tartalmazza és ezeket a lista nevû ArrayListben
-    * eltárolja (deszerializálás)
-    */
-    @SuppressWarnings("unchecked")
-    void fajlmegnyitas() {
-        // A fájl megnyitása
-        try {
-            InputStream file = new FileInputStream("toplista.ser");
-            InputStream buffer = new BufferedInputStream(file);
-            ObjectInput in;
-            in = new ObjectInputStream(buffer);
-
-            // A fájl tartalmának bemásolása a lista ArrayListbe
-            lista = (ArrayList<Toplist>) in.readObject();
-
-            // A fájl bezárása
-            in.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /*
-    * A fájlbaíró függvény a "toplista.ser" nevû fájlba beírja a legfrissebb
-    * toplista szereplõit (szerializálás)
-    */
-    void fajlbairas() {
-        // A fájl megnyitása
-        try {
-            OutputStream file = new FileOutputStream("toplista.ser");
-
-            OutputStream buffer = new BufferedOutputStream(file);
-            ObjectOutput out;
-            out = new ObjectOutputStream(buffer);
-
-            // A lista ArrayList fájlba írása
-            out.writeObject(lista);
-
-            // A fájl bezárása
-            out.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /*
-    * Ez a függvény a játék végét vizsgálja. Megnézi, hogy a kígyó halála után
-    * felkerül-e a toplistára a játékos az elért eredményével. Ha igen akkor
-    * bekéri a nevét, és frissíti a toplistát. Ha nem akkor egy játék vége
-    * képernyõt rajzol ki. A végén pedig szerializál.
-    */
     void toplistabatesz() {
         gameBoard.setVisible(false);
-        top.setVisible(true);
-        // Ha az elért eredmény jobb az eddigi legkisebb eredménynél
-        if (pontok > lista.get(lista.size() - 1).getpont()) {
-            // Egy ArrayList létrehozása, mely a megadott nevet tárolja
-            final ArrayList<String> holder = new ArrayList<String>();
+        topList.setVisible(true);
 
-            // A kiírások és a szövegmezõ létrehozása
-            JLabel nyert1 = new JLabel("A játéknak vége!");
-            JLabel nyert2 = new JLabel("Gratulálok! Felkerültél a toplistára. Kérlek add meg a neved (max 10 betû):");
-            final JTextField newnev = new JTextField(10);
+        if (topListRepo.canAddScore(score)) {
+            addLabelsToToplist("A játéknak vége!", "Gratulálok! Felkerültél a toplistára. Kérlek add meg a neved (max 10 betû):");
+            final JTextField playerName = new JTextField(10);
+            topList.add(playerName);
 
-            // Ezek hozzáadása a top panelhez
-            top.removeAll();
-            top.add(nyert1);
-            top.add(nyert2);
-            top.add(newnev);
-
-            // A szövegmezõ tartalmának hozzásadása a holderhez
-            newnev.addActionListener(new ActionListener() {
+            playerName.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    synchronized (holder) {
-                        holder.add(newnev.getText());
-                        holder.notify();
-                    }
-                    mainWindow.dispose();
+                    topListRepo.addNewEntry(new TopListEntry(playerName.getText(), score));
+                    topListRepo.writeFile();
+                    drawTopListScrollPanel();
+                    showTopListScrollPane();
+                    mainWindow.setVisible(true);
+                    mainWindow.repaint();
                 }
             });
-
-            // A top panel hozzáadása az ablakhoz, és az ablak újrarajzolása
-            mainWindow.add(top, BorderLayout.CENTER);
-            mainWindow.setVisible(true);
-            mainWindow.repaint();
-
-            // Várakozás a szövegezõ kitöltéséig
-            synchronized (holder) {
-                while (holder.isEmpty())
-                    try {
-                        holder.wait();
-                    } catch (InterruptedException e1) {
-                        e1.printStackTrace();
-                    }
-            }
-
-            // A lista utolsó elemének kicserélése az új listaelemmel és a lista
-            // sorbarendezése
-            lista.remove(lista.size() - 1);
-            lista.add(new Toplist(holder.remove(0), pontok));
-            Collections.sort(lista, new Comp());
-
-            // A toplista frissítése, és kirajzolása az ablakra
-            toplistafrissites();
-            top.removeAll();
-            top.add(scrollpane);
-            mainWindow.repaint();
-            // Ha az eredmény nincs bent a legjobb 10-be
         } else {
-            // A kiirások létrehozása és hozzáadása az ablakhoz
-            JLabel nemnyert1 = new JLabel("A játéknak vége!");
-            JLabel nemnyert2 = new JLabel("Sajnos nem került be az eredményed a legjobb 10-be. Próbálkozz újra (F2).");
-            nemnyert1.setForeground(Color.BLACK);
-            nemnyert2.setForeground(Color.BLACK);
-            top.removeAll();
-            top.add(nemnyert1);
-            top.add(nemnyert2);
-
-            // A toplista frissítése és a top panel hozzáadása az ablakhoz
-            toplistafrissites();
-            mainWindow.add(top, BorderLayout.CENTER);
-            mainWindow.setVisible(true);
-            mainWindow.repaint();
+            addLabelsToToplist("A játéknak vége!", "Sajnos nem került be az eredményed a legjobb 10-be. Próbálkozz újra (F2).");
+            drawTopListScrollPanel();
+            mainWindow.add(topList, BorderLayout.CENTER);
         }
-        // Szerializálás
-        fajlbairas();
     }
 
-    /*
-    * Ez a függvény a toplistát egy táblázatba rakja
-    */
+    private void showTopListScrollPane() {
+        topList.removeAll();
+        topList.add(topListScrollPane);
+        mainWindow.add(topList, BorderLayout.CENTER);
+    }
+
+    private void addLabelsToToplist(String title, String description) {
+        JLabel titleLabel = new JLabel(title);
+        JLabel descriptionLabel = new JLabel(description);
+        titleLabel.setForeground(Color.BLACK);
+        descriptionLabel.setForeground(Color.BLACK);
+        topList.removeAll();
+        topList.add(titleLabel);
+        topList.add(descriptionLabel);
+    }
+
     @SuppressWarnings({"rawtypes", "unchecked"})
-    void toplistafrissites() {
-        // A táblázat fejlécének létrehozása
-        Vector colnames = new Vector();
-        colnames.add("Név");
-        colnames.add("Pont");
+    void drawTopListScrollPanel() {
+        Vector columnHeaders = new Vector();
+        columnHeaders.add("Név");
+        columnHeaders.add("Pont");
 
-        // A táblázat létrehozása egy ScrollPane-ben
-        DefaultTableModel tablazatmodell = new DefaultTableModel(colnames, 0);
-        JTable tablazat = new JTable(tablazatmodell);
-        scrollpane = new JScrollPane(tablazat);
+        DefaultTableModel entryTable = new DefaultTableModel(columnHeaders, 0);
+        JTable tablazat = new JTable(entryTable);
+        topListScrollPane = new JScrollPane(tablazat);
 
-        // A táblázat feltöltése a lista elemeivel
-        for (Toplist i : lista) {
-            String[] row = {i.getnev(), i.getstrpont()};
-            tablazatmodell.addRow(row);
+        for (TopListEntry entry : topListRepo.getTopList()) {
+            String[] row = {entry.getPlayerName(), Integer.toString(entry.getScore())};
+            entryTable.addRow(row);
         }
-
     }
 
-    /*
-    * A mozgató függvény megváltoztatja a kígyó pozícióját a megadott irányba,
-    * és közben vizsgálja, hogy a kígyó nem ütközött-e falnak vagy magának,
-    * illetve azt, hogy evett-e
-    */
     void mozgat() {
         try {
             snake.move();
@@ -470,13 +337,13 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
     }
 
     private void updatePoints() {
-        pontok = pontok + 5;
-        scoreBarLabel.setText("Pontszám: " + pontok);
+        score = score + 5;
+        scoreBarLabel.setText("Pontszám: " + score);
     }
 
     private void endGame() {
-        fut = false;
-        gameover = true;
+        isRunning = false;
+        isGameOver = true;
         toplistabatesz();
     }
 
@@ -484,10 +351,6 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
         return snake.getHead().x >= BOARD_WIDTH || snake.getHead().x < 0 || snake.getHead().y >= BOARD_HEIGHT || snake.getHead().y < 0;
     }
 
-    /*
-    * A billentyû lenyomását érzékelõ függvény, mely megfelelõ gomb lenyomására
-    * a megfelelõ mûveletet hajtja végre
-    */
     @Override
     public void keyPressed(KeyEvent e) {
         if (e.getKeyCode() == 113) {
@@ -506,19 +369,19 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
             } else if (e.getKeyCode() == 40) {
                 y = 1;
             }
-            if (!isOppositeHeading(x, y)) {
-                setSnakeHeading(x, y);
+            if (!isOppositeDirection(x, y)) {
+                setSnakeDirection(x, y);
             }
             canChangeDirection = false;
         }
     }
 
-    private boolean isOppositeHeading(int x, int y) {
-        return snake.getHeading().x == -x && snake.getHeading().y == -y;
+    private boolean isOppositeDirection(int x, int y) {
+        return snake.getDirection().x == -x && snake.getDirection().y == -y;
     }
 
-    private void setSnakeHeading(int x, int y) {
-        snake.setHeading(new Point(x, y));
+    private void setSnakeDirection(int x, int y) {
+        snake.setDirection(new Point(x, y));
     }
 
     @Override
@@ -534,12 +397,14 @@ public class SnakeOriginal extends JFrame implements KeyListener, Runnable {
     */
     @Override
     public void run() {
-        while (fut) {
-            mozgat();
-            try {
-                Thread.sleep(sebesseg);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        while (true) {
+            while (isRunning) {
+                mozgat();
+                try {
+                    Thread.sleep(updateDelay);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

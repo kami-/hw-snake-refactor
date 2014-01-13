@@ -9,15 +9,15 @@ import java.util.List;
 import com.homework.snake.exceptions.SnakeAteItselfException;
 
 public class Snake {
-    private Point heading;
+    private Point direction;
     private Deque<Point> parts = new LinkedList<>();
     private boolean hasEaten;
 
-    public Snake(int initLength, Point head, Point heading) {
-        this.heading = heading;
+    public Snake(int initLength, Point head, Point direction) {
+        this.direction = direction;
         parts.add(head);
         for (int i = 1; i < initLength; i++) {
-            parts.add(new Point(head.x - heading.x * i, head.y - heading.y * i));
+            parts.add(new Point(head.x - direction.x * i, head.y - direction.y * i));
         }
     }
 
@@ -25,16 +25,16 @@ public class Snake {
         return parts.peekFirst();
     }
 
-    public void setHeading(Point heading) {
-        this.heading = heading;
+    public void setDirection(Point direction) {
+        this.direction = direction;
     }
     
-    public Point getHeading() {
-        return heading;
+    public Point getDirection() {
+        return direction;
     }
 
     public void move() {
-        addHeadingPoint();
+        addDirectionPoint();
         if (hasEaten) {
             hasEaten = false;
         } else {
@@ -46,13 +46,13 @@ public class Snake {
         hasEaten = true;
     }
 
-    private void addHeadingPoint() {
+    private void addDirectionPoint() {
         Point head = parts.peekFirst();
-        Point newHead = new Point(head.x + heading.x, head.y + heading.y);
+        Point newHead = new Point(head.x + direction.x, head.y + direction.y);
         if (parts.contains(newHead)) {
             throw new SnakeAteItselfException();
         }
-        parts.addFirst(new Point(head.x + heading.x, head.y + heading.y));
+        parts.addFirst(new Point(head.x + direction.x, head.y + direction.y));
     }
     
     public List<Point> getParts() {
